@@ -143,22 +143,7 @@ def generate_launch_description():
     # ------------------------------------------------------
     # Cria a entidade no mundo simulado utilizando a descrição do robô.
 
-    # SPAWN DO LADO DA BANDEIRA
-    spawn_entity = Node(
-        package="ros_gz_sim",
-        executable="create",
-        output="screen",
-        arguments=[
-            "-name", "prm_robot",          # Nome da entidade no simulador
-            "-topic", "robot_description",  # Descrição do robô a ser utilizada
-            "-z", "1.0",                   # Altura inicial do robô
-            "-x", "6.0",                  # Posição no eixo X
-            "-y", "-0.4",                  # Posição no eixo X
-            "--ros-args", "--log-level", "warn"
-        ],
-        parameters=[{"use_sim_time": True}],  # Usa o tempo simulado
-    )
-
+    # # SPAWN DO LADO DA BANDEIRA
     # spawn_entity = Node(
     #     package="ros_gz_sim",
     #     executable="create",
@@ -167,12 +152,27 @@ def generate_launch_description():
     #         "-name", "prm_robot",          # Nome da entidade no simulador
     #         "-topic", "robot_description",  # Descrição do robô a ser utilizada
     #         "-z", "1.0",                   # Altura inicial do robô
-    #         "-x", "-8.0",                  # Posição no eixo X
-    #         "-y", "-0.5",                  # Posição no eixo X
+    #         "-x", "6.0",                  # Posição no eixo X
+    #         "-y", "-0.4",                  # Posição no eixo X
     #         "--ros-args", "--log-level", "warn"
     #     ],
     #     parameters=[{"use_sim_time": True}],  # Usa o tempo simulado
     # )
+
+    spawn_entity = Node(
+        package="ros_gz_sim",
+        executable="create",
+        output="screen",
+        arguments=[
+            "-name", "prm_robot",          # Nome da entidade no simulador
+            "-topic", "robot_description",  # Descrição do robô a ser utilizada
+            "-z", "1.0",                   # Altura inicial do robô
+            "-x", "-8.0",                  # Posição no eixo X
+            "-y", "-0.5",                  # Posição no eixo X
+            "--ros-args", "--log-level", "warn"
+        ],
+        parameters=[{"use_sim_time": True}],  # Usa o tempo simulado
+    )
 
     # ------------------------------------------------------
     # Ponte Gazebo <-> ROS 2 (ros_gz_bridge)
