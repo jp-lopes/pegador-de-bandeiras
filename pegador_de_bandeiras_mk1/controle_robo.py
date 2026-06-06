@@ -19,6 +19,7 @@ class Estados(Enum):
     BANDEIRA_DETECTADA = 2
     NAVEGANDO_PARA_BANDEIRA = 3
     POSICIONANDO_PARA_COLETA = 4
+    DESVIANDO_DE_OBSTACULO = 5
 
 
 class ControleRobo(Node):
@@ -44,6 +45,8 @@ class ControleRobo(Node):
 
         # Estado interno
         self.obstaculo_a_frente = False
+        self.obstaculo_a_frente_esquerda = False
+        self.obstaculo_a_frente_direita = False
         self.obstaculo_a_esquerda = False
         self.obstaculo_a_direita = False
         self.bandeira_a_frente = False
@@ -51,6 +54,8 @@ class ControleRobo(Node):
         self.pos_x_bandeira_camera = -1
         self.centro_x_camera = -1
         self.distancias = None
+        self.tempo_desviando = -1
+        self.direcao_desvio = -1
 
         self.estado_atual = Estados.EXPLORANDO
         self.estado_anterior = None
@@ -60,29 +65,38 @@ class ControleRobo(Node):
         num_ranges = len(msg.ranges)
         if num_ranges == 0:
             return
-        # Índices de -45° a +45°
-        indices_esquerda = list(range(0, 46))
-        indices_direita = list(range(315, 360))
-        indices_frente = indices_esquerda + indices_direita
+        
+        distancia_max_obstaculo = 0.67
 
-        # Filtra distancias
+        # DETECÇÃO DE OBSTACULOS À FRENTE - Índices de -40° a +40°
+        indices_frente_esquerda = list(range(0, 40))
+        indices_frente_direita = list(range(320, 360))
+        indices_frente = indices_frente_esquerda + indices_frente_direita
+
         self.distancias = [msg.ranges[i] for i in indices_frente]
-        self.obstaculo_a_frente = self.distancias and min(
-            self.distancias) < 0.65
+        self.obstaculo_a_frente = self.distancias and min(self.distancias) < distancia_max_obstaculo
 
         if self.obstaculo_a_frente:
-            self.obstaculo_a_esquerda = False
-            self.obstaculo_a_direita = False
-
-            # obstaculo a direita
-            if msg.ranges.index(min(self.distancias)) in indices_esquerda:
+            self.obstaculo_a_frente_esquerda = False
+            self.obstaculo_a_frente_direita = False
+            # obstaculo à frente direita
+            if msg.ranges.index(min(self.distancias)) in indices_frente_esquerda:
                 # self.get_logger().info("Obstaculo detectado à esquerda")
-                self.obstaculo_a_esquerda = True
-
-            # obstaculo a esquerda
-            if msg.ranges.index(min(self.distancias)) in indices_direita:
+                self.obstaculo_a_frente_esquerda = True
+            # obstaculo à frente esquerda
+            if msg.ranges.index(min(self.distancias)) in indices_frente_direita:
                 # self.get_logger().info("Obstaculo detectado à direita")
-                self.obstaculo_a_direita = True
+                self.obstaculo_a_frente_direita = True
+
+        # DETECÇÃO DE OBSTACULOS À ESQUERDA - Índices de +40° a +90°
+        indices_esquerda = list(range(40, 90))
+        self.distancias = [msg.ranges[i] for i in indices_esquerda]
+        self.obstaculo_a_esquerda = self.distancias and min(self.distancias) < distancia_max_obstaculo
+        # DETECÇÃO DE OBSTACULOS À DIREITA - Índices de -40° a -90°
+        indices_direita = list(range(270, 320))
+        self.distancias = [msg.ranges[i] for i in indices_direita]
+        self.obstaculo_a_direita = self.distancias and min(self.distancias) < distancia_max_obstaculo
+
 
     def imu_callback(self, msg: Imu):
         return
@@ -131,9 +145,10 @@ class ControleRobo(Node):
         # Cor da bandeira na camera semantica
         target_color = np.array([227, 73, 0])
         mask_bandeira = cv2.inRange(frame, target_color, target_color)
+        
         contours_bandeira, _ = cv2.findContours(
             mask_bandeira, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+        
         # zera a parte superior da mascara para ver apenas o mastro da bandeira
         mask_mastro = mask_bandeira.copy()
         limite_corte = int(h * 0.5)
@@ -168,19 +183,18 @@ class ControleRobo(Node):
             self.porcentagem_bandeira_na_camera = 0.0
 
     def move_robot(self):
-
         if self.estado_anterior != self.estado_atual:
             self.get_logger().info(f"## {self.estado_atual.name} ##")
             self.estado_anterior = self.estado_atual
 
         twist = Twist()
-        dx = 20
-        base_vel_angular = 0.4
+        dx = 25
+        base_vel_angular = 0.3
         base_vel_linear = 0.4
-        base_vel_linear_curvas = 0.1
-        bandeira_centralizada = self.pos_x_bandeira_camera <= self.centro_x_camera + \
-            dx and self.pos_x_bandeira_camera >= self.centro_x_camera - dx
+        bandeira_centralizada = self.pos_x_bandeira_camera <= self.centro_x_camera + dx and self.pos_x_bandeira_camera >= self.centro_x_camera - dx
+        direcao_bandeira = 1 if (self.pos_x_bandeira_camera < self.centro_x_camera - dx) else -1
 
+        ## EXPLORANDO: o robô vai para frente
         if self.estado_atual == Estados.EXPLORANDO:
             if not self.obstaculo_a_frente:
                 # Se encontrou a bandeira e não tem obstáculo no caminho, vai para o próximo estado
@@ -192,10 +206,33 @@ class ControleRobo(Node):
                     twist.linear.x = base_vel_linear
             # Se tem obstaculo no caminho, desvia para o lado oposto
             else:
-                twist.angular.z = base_vel_angular * \
-                    (1 if self.obstaculo_a_direita else -1)
-                twist.linear.x = base_vel_linear_curvas
+                self.tempo_desviando = 15  # desvia por 15 loops
+                self.estado_atual = Estados.DESVIANDO_DE_OBSTACULO
 
+        ## DESVIANDO DE OBSTACULO: o robô vira para o lado oposto do obstáculo e anda para frente
+        elif self.estado_atual == Estados.DESVIANDO_DE_OBSTACULO:
+            if self.obstaculo_a_frente:
+                self.direcao_desvio = 1 if self.obstaculo_a_frente_direita else -1
+            
+                if self.obstaculo_a_frente_direita and self.obstaculo_a_frente_esquerda:
+                    self.get_logger().info("Obstaculo detectado à frente (dos dois lados)")
+                    twist.angular.z = base_vel_angular * self.direcao_desvio * -1
+                    twist.linear.x = base_vel_linear * 0.5 * -1
+                else:
+                    self.get_logger().info("Obstaculo detectado à " + ("direita" if self.obstaculo_a_frente_direita else "esquerda"))
+                    twist.angular.z = base_vel_angular * self.direcao_desvio
+
+                self.tempo_desviando = 15
+
+            elif self.tempo_desviando > 0:
+                twist.angular.z = base_vel_angular * self.direcao_desvio
+                twist.linear.x = base_vel_linear * 0.7
+                self.tempo_desviando -= 1
+
+            else:
+                self.estado_atual = Estados.EXPLORANDO
+
+        ## BANDEIRA DETECTADA: o robô alinha-se com a bandeira
         elif self.estado_atual == Estados.BANDEIRA_DETECTADA:
             # se perdeu a bandeira por algum motivo, volta a explorar
             if not self.bandeira_a_frente:
@@ -203,18 +240,22 @@ class ControleRobo(Node):
                 self.estado_atual = Estados.EXPLORANDO
             # Detectou obstaculo que não é a bandeira durante a centralização da bandeira, volta a explorar
             elif self.obstaculo_a_frente and self.porcentagem_bandeira_na_camera < 15:
-                self.get_logger().info("Obstaculo detectado, voltando para o estado explorando")
-                self.estado_atual = Estados.EXPLORANDO
+                self.get_logger().info("Obstaculo detectado, desviando")
+                self.tempo_desviando = 15  # desvia por 15 loops
+                self.estado_atual = Estados.DESVIANDO_DE_OBSTACULO
 
             # Alinha robo com a bandeira
             elif not bandeira_centralizada:
-                twist.angular.z = base_vel_angular * \
-                    (1 if (self.pos_x_bandeira_camera <
-                     self.centro_x_camera - dx) else -1)
+                # Se tem obstaculo na direção da bandeira, não vira, só vai pra frente
+                if (direcao_bandeira > 0 and self.obstaculo_a_esquerda) or (direcao_bandeira < 0 and self.obstaculo_a_direita):  
+                    twist.linear.x = base_vel_linear
+                else:
+                    twist.angular.z = base_vel_angular * direcao_bandeira
             else:
                 # alinhado, vai para o próximo estado
                 self.estado_atual = Estados.NAVEGANDO_PARA_BANDEIRA
 
+        ## NAVEGANDO PARA BANDEIRA: o robô anda na direção da bandeira
         elif self.estado_atual == Estados.NAVEGANDO_PARA_BANDEIRA:
             # se perdeu a bandeira por algum motivo, volta a explorar
             if not self.bandeira_a_frente:
@@ -222,31 +263,31 @@ class ControleRobo(Node):
                 self.estado_atual = Estados.EXPLORANDO
 
             elif self.obstaculo_a_frente:
-                if self.porcentagem_bandeira_na_camera > 15:
+                if self.porcentagem_bandeira_na_camera > 10:
                     # Se a bandeira esta grande na camera, chegou perto da bandeira
                     twist.linear.x = 0.0
                     self.get_logger().info("Bandeira alcançada!")
                     self.estado_atual = Estados.POSICIONANDO_PARA_COLETA
 
                 else:
-                    twist.angular.z = base_vel_angular * \
-                        (1 if self.obstaculo_a_direita else -1)
-                    twist.linear.x = base_vel_linear_curvas
+                    # Caso contrário, é um obstaculo normal
+                    self.get_logger().info("Obstaculo detectado, desviando")
+                    self.tempo_desviando = 15  # desvia por 15 loops
+                    self.estado_atual = Estados.DESVIANDO_DE_OBSTACULO
             else:
+                # Vai em direção à bandeira
                 twist.linear.x = base_vel_linear
                 if not bandeira_centralizada:
-                    twist.angular.z = (base_vel_angular * 0.5) * \
-                        (1 if (self.pos_x_bandeira_camera <
-                         self.centro_x_camera - dx) else -1)
+                    twist.angular.z = (base_vel_angular * 0.5) * direcao_bandeira
 
+        ## POSICIONANDO PARA COLETA: o robô a se alinha com o mastro da bandeira
         elif self.estado_atual == Estados.POSICIONANDO_PARA_COLETA:
             # Permanece parado na frente da bandeira
             twist.linear.x = 0.0
+            dx = 5
             # Alinha robo com a bandeira
             if not bandeira_centralizada:
-                twist.angular.z = base_vel_angular * \
-                    (1 if (self.pos_x_bandeira_camera <
-                     self.centro_x_camera - dx) else -1)
+                twist.angular.z = (base_vel_angular * 0.5) * direcao_bandeira
 
         self.cmd_vel_pub.publish(twist)
 
