@@ -17,10 +17,10 @@ import random
 
 class Estados(Enum):
     EXPLORANDO = 1
-    BANDEIRA_DETECTADA = 2
+    DESVIANDO_DE_OBSTACULO = 2
     NAVEGANDO_PARA_BANDEIRA = 3
     POSICIONANDO_PARA_COLETA = 4
-    DESVIANDO_DE_OBSTACULO = 5
+    CAPTURANDO_BANDEIRA = 5
 
 
 class ControleRobo(Node):
@@ -192,8 +192,8 @@ class ControleRobo(Node):
             if not self.obstaculo_a_frente:
                 # Se encontrou a bandeira e não tem obstáculo no caminho, vai para o próximo estado
                 if self.bandeira_a_frente:
-                    self.get_logger().info("Bandeira detectada, iniciando alinhamento")
-                    self.estado_atual = Estados.BANDEIRA_DETECTADA
+                    self.get_logger().info("Bandeira detectada! Iniciando navegação em direção à bandeira.")
+                    self.estado_atual = Estados.NAVEGANDO_PARA_BANDEIRA
                 # Caso contrario, continua andando para frente
                 else:
                     twist.linear.x = base_vel_linear
@@ -216,70 +216,48 @@ class ControleRobo(Node):
             else:
                 self.estado_atual = Estados.EXPLORANDO
 
-        ## BANDEIRA DETECTADA: o robô alinha-se com a bandeira
-        elif self.estado_atual == Estados.BANDEIRA_DETECTADA:
-            # se perdeu a bandeira por algum motivo, volta a explorar
-            if not self.bandeira_a_frente:
-                self.get_logger().info("Bandeira perdida, voltando para o estado explorando")
-                self.estado_atual = Estados.EXPLORANDO
-            # Detectou obstaculo que não é a bandeira durante a centralização da bandeira, volta a explorar
-            elif self.obstaculo_a_frente and self.porcentagem_bandeira_na_camera < 5.0:
-                self.get_logger().info("Obstaculo detectado, desviando")
-                self.estado_atual = Estados.DESVIANDO_DE_OBSTACULO
-
-            # Alinha robo com a bandeira
-            elif not bandeira_centralizada:
-                # Se tem obstaculo na direção da bandeira, não vira, só vai pra frente
-                if (direcao_bandeira > 0 and self.obstaculo_a_esquerda) or (direcao_bandeira < 0 and self.obstaculo_a_direita):
-                    self.get_logger().info("Obstaculo na direcao da bandeira, indo pra frente")
-                    twist.linear.x = base_vel_linear * 0.5
-                    twist.angular.z = base_vel_angular * 0.25 * direcao_bandeira
-                else:
-                    twist.angular.z = base_vel_angular * 0.5 * direcao_bandeira
-            else:
-                # alinhado, vai para o próximo estado
-                self.estado_atual = Estados.NAVEGANDO_PARA_BANDEIRA
-
         ## NAVEGANDO PARA BANDEIRA: o robô anda na direção da bandeira
         elif self.estado_atual == Estados.NAVEGANDO_PARA_BANDEIRA:
             # se perdeu a bandeira por algum motivo, volta a explorar
             if not self.bandeira_a_frente:
-                self.get_logger().info("Bandeira perdida, voltando para o estado explorando")
+                self.get_logger().info("Bandeira perdida, voltando para o estado de exploração.")
                 self.estado_atual = Estados.EXPLORANDO
-
-            # Se a bandeira esta grande na camera, chegou perto da bandeira
-            elif self.porcentagem_bandeira_na_camera > 5.0:
-                twist.linear.x = 0.0
-                self.get_logger().info("Bandeira alcançada!")
-                self.estado_atual = Estados.POSICIONANDO_PARA_COLETA
-
-            # Caso contrário, verifica se tem obstaculo 
-            elif self.obstaculo_a_frente:
-                self.get_logger().info("Obstaculo detectado, desviando")
+            # Detectou obstaculo que não é a bandeira durante a centralização da bandeira, volta a explorar
+            elif self.obstaculo_a_frente and self.porcentagem_bandeira_na_camera < 5.0:
                 self.estado_atual = Estados.DESVIANDO_DE_OBSTACULO
-            # Vai em direção à bandeira
+            # se já está alinhado e chegou perto da bandeira (5% ou mais na tela) vai p/ o próximo estado
+            elif self.porcentagem_bandeira_na_camera > 5.0:
+                    twist.linear.x = 0.0
+                    self.get_logger().info("Bandeira alcançada! Iniciando alinhamento para coleta.")
+                    self.estado_atual = Estados.POSICIONANDO_PARA_COLETA
+            # Alinha robo com a bandeira
+            elif (direcao_bandeira > 0 and self.obstaculo_a_esquerda) or (direcao_bandeira < 0 and self.obstaculo_a_direita):
+                twist.linear.x = base_vel_linear * 0.50
+                twist.angular.z = base_vel_angular * 0.20 * (direcao_bandeira if not bandeira_centralizada else 0)
             else:
-                twist.linear.x = base_vel_linear
-                if not bandeira_centralizada:
-                    twist.angular.z = (base_vel_angular * 0.5) * direcao_bandeira
+                twist.linear.x = base_vel_linear 
+                twist.angular.z = base_vel_angular * (direcao_bandeira if not bandeira_centralizada else 0)
 
         ## POSICIONANDO PARA COLETA: o robô a se alinha com o mastro da bandeira
         elif self.estado_atual == Estados.POSICIONANDO_PARA_COLETA:
-            # Permanece parado na frente da bandeira
-            twist.linear.x = 0.0
-            dx = 5
+            dx = 5  # diminui margem para centralizar melhor
             bandeira_centralizada = self.pos_x_bandeira_camera <= self.centro_x_camera + dx and self.pos_x_bandeira_camera >= self.centro_x_camera - dx
             direcao_bandeira = 1 if (self.pos_x_bandeira_camera < self.centro_x_camera - dx) else -1
+            # se perdeu a bandeira por algum motivo, volta a explorar
+            if not self.bandeira_a_frente:
+                self.get_logger().info("Bandeira perdida, voltando para o estado de exploração.")
+                self.estado_atual = Estados.EXPLORANDO
             # Alinha robo com a bandeira
-            if not bandeira_centralizada:
-                self.get_logger().info("Centralizando garra com o mastro da bandeira")
+            elif not bandeira_centralizada:
+                self.get_logger().info("Centralizando garra com o mastro da bandeira...")
                 twist.angular.z = (base_vel_angular * 0.25) * direcao_bandeira
             # Chega o mais próximo o possível da bandeira
             elif not self.obstaculo_a_frente:
-                self.get_logger().info("Aproximando da bandeira")
+                self.get_logger().info("Aproximando da bandeira...")
                 twist.linear.x = 0.1
             else:
-                self.get_logger().info("Garra posicionada")
+                self.get_logger().info("Garra posicionada!")
+                self.estado_atual = Estados.CAPTURANDO_BANDEIRA
 
         self.cmd_vel_pub.publish(twist)
 
