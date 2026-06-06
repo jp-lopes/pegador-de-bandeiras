@@ -60,15 +60,15 @@ class ControleRobo(Node):
         num_ranges = len(msg.ranges)
         if num_ranges == 0:
             return
-        # Índices de -35° a +35°
-        indices_esquerda = list(range(0, 36))
-        indices_direita = list(range(325, 360))
+        # Índices de -45° a +45°
+        indices_esquerda = list(range(0, 46))
+        indices_direita = list(range(315, 360))
         indices_frente = indices_esquerda + indices_direita
 
         # Filtra distancias
         self.distancias = [msg.ranges[i] for i in indices_frente]
         self.obstaculo_a_frente = self.distancias and min(
-            self.distancias) < 0.63
+            self.distancias) < 0.65
 
         if self.obstaculo_a_frente:
             self.obstaculo_a_esquerda = False
@@ -136,7 +136,7 @@ class ControleRobo(Node):
 
         # zera a parte superior da mascara para ver apenas o mastro da bandeira
         mask_mastro = mask_bandeira.copy()
-        limite_corte = int(h * 0.6)
+        limite_corte = int(h * 0.5)
         mask_mastro[0:limite_corte, :] = 0
         contours_mastro, _ = cv2.findContours(
             mask_mastro, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -176,8 +176,8 @@ class ControleRobo(Node):
         twist = Twist()
         dx = 20
         base_vel_angular = 0.4
-        base_vel_linear = 0.3
-        base_vel_linear_curvas = 0.05
+        base_vel_linear = 0.4
+        base_vel_linear_curvas = 0.1
         bandeira_centralizada = self.pos_x_bandeira_camera <= self.centro_x_camera + \
             dx and self.pos_x_bandeira_camera >= self.centro_x_camera - dx
 
