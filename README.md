@@ -3,9 +3,7 @@
 
 *Projeto da disciplina SSC0712 - Programação de Robôs Móveis*
 
-Este projeto é um robô móvel autônomo capaz de se deslocar em uma arena com obstáculos até uma bandeira e depois alinhar a garra ao mastro da bandeira, tudo isso em simulação utilizando o Gazebo. 
-
-O robô funciona a partir de uma máquina de estados, com os seguintes estados implementados até o momento:
+Este projeto é um robô móvel autônomo capaz de se deslocar em uma arena com obstáculos até uma bandeira e depois alinhar a garra ao mastro da bandeira, tudo isso em simulação utilizando o Gazebo. O robô funciona a partir de uma máquina de estados, com os seguintes estados implementados até o momento:
 - EXPLORANDO: o robô anda para frente. Se encontrar um obstáculo, alterna para o estado "DESVIANDO_DE_OBSTACULO", e se encontrar a bandeira alterna para o estado "NAVEGANDO_PARA_BANDEIRA"
 
 - DESVIANDO_DE_OBSTACULO: o robô para e vira na direção oposta do obstáculo para desviar. Depois, ele anda um pouco para frente e muda para o modo "EXPLORANDO".
@@ -16,14 +14,15 @@ O robô funciona a partir de uma máquina de estados, com os seguintes estados i
 
 - CAPTURANDO_BANDEIRA: ainda não implementado.
 
+Diagrama de Estados:
 ![Diagrama de Estados](https://github.com/jp-lopes/pegador_de_bandeiras/blob/pegador_de_bandeiras_mk1/Diagrama_de_estados.png)
 
 
 
 ## Autores
-- [@Andre-Murakami](https://github.com/Andre-Murakami)
-- [@CaioCesarTA](https://github.com/CaioCesarTA)
-- [@jp-lopes](https://github.com/jp-lopes)
+- Andre Luiz de Souza Murakami - nUSP 5631500 - [@Andre-Murakami](https://github.com/Andre-Murakami)
+- Caio Cesar Trentin de Assis - nUSP 15674233 - [@CaioCesarTA](https://github.com/CaioCesarTA)
+- João Pedro Lopes de Melo - nUSP 15588950 - [@jp-lopes](https://github.com/jp-lopes)
 
 
 ## Instruções para execução localmente
@@ -46,20 +45,19 @@ O robô funciona a partir de uma máquina de estados, com os seguintes estados i
     cd ~/ros2_ws
     colcon build
     ```
-4. Abrir 3 terminais:
-- No primeiro, iniciar a simulação do Gazebo:
+4. Iniciar a simulação do Gazebo:
     ```bash 
-    cd ~/ros2_ws
     source install/setup.bash
     ros2 launch pegador_de_bandeiras_mk1 inicia_simulacao.launch.py
     ```
-- No segundo, carregar o robô na simulação:
+5. Abrir mais dois terminais:
+- No primeiro, carregar o robô na simulação:
     ```bash 
     cd ~/ros2_ws
     source install/setup.bash
     ros2 launch pegador_de_bandeiras_mk1 carrega_robo.launch.py
     ```
-- No terceiro, iniciar o controle autonômo do robô:
+- No segundo, iniciar o controle autonômo do robô:
     ```bash 
     cd ~/ros2_ws
     source install/setup.bash
