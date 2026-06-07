@@ -1,0 +1,20 @@
+services:
+  ros2:
+    build: .
+    container_name: ros2_humble_env
+    network_mode: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+
+    volumes:
+      - ..:/home/user/ros2_ws/src/pegador_de_bandeiras_mk1
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/user/.Xauthority:rw
+
+    devices:
+      - /dev/dri:/dev/dri # Essencial para a placa Intel integrada não quebrar o RViz2
+    
+    stdin_open: true
+    tty: true

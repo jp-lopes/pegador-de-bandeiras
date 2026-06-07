@@ -5,6 +5,7 @@
   <version>1.0.0</version>
   <description>Melhor pegador de bandeiras ja visto</description>
   <maintainer email="caioctassis@gmail.com">CaioCesar</maintainer>
+  <maintainer email="">AndreMurakami</maintainer>
   <maintainer email="joao_lopes@usp.br">JoaoLopes</maintainer>
   <license>TODO: License declaration</license>
 
@@ -17,6 +18,7 @@
   <exec_depend>python3-opencv</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>python3-scipy</exec_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>ros2_control</exec_depend>
   <exec_depend>ros2_controllers</exec_depend>
