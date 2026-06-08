@@ -72,7 +72,7 @@ class ControleRobo(Node):
         self.direcao_bandeira = -1
         # Distância de detecção de obstáculos
         self.distancia_max_obstaculo_frente = 0.63
-        self.distancia_max_obstaculo_lados = 0.40
+        self.distancia_max_obstaculo_lados = 0.50
         # Range de detecção de obstáculos à frente (-30° a +30°)
         self.indices_frente_esquerda = list(range(0, 30))
         self.indices_frente_direita = list(range(330, 360))
@@ -283,7 +283,7 @@ class ControleRobo(Node):
             else:
                 if (self.direcao_bandeira == Direcoes.ESQUERDA.value and self.obstaculo_a_esquerda) or (self.direcao_bandeira == Direcoes.DIREITA.value and self.obstaculo_a_direita):
                     # se tiver obstaculos dos lados, vira mais devagar
-                    twist.angular.z = base_vel_angular * 0.20 * (self.direcao_bandeira if not bandeira_centralizada else 0)
+                    twist.angular.z = base_vel_angular * 0.50 * (self.direcao_bandeira if not bandeira_centralizada else 0)
                 else:
                     twist.angular.z = base_vel_angular * (self.direcao_bandeira if not bandeira_centralizada else 0)
                 # Vai na direção da bandeira, e desacelera para metade da velocidade base quando chega perto
