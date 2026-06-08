@@ -294,8 +294,8 @@
 
     <joint name="left_gripper_joint">
       <command_interface name="position">
-        <param name="min">0.0</param>
-        <param name="max">0.06</param>
+        <param name="min">-1.57</param>
+        <param name="max">1.57</param>
       </command_interface>
       <state_interface name="position">
         <param name="initial_value">0.0</param> 
@@ -305,8 +305,30 @@
 
     <joint name="right_gripper_joint">
       <command_interface name="position">
-        <param name="min">-0.06</param>
-        <param name="max">0.0</param>
+        <param name="min">-1.57</param>
+        <param name="max">1.57</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param> 
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="left_tip_joint">
+      <command_interface name="position">
+        <param name="min">-1.57</param>
+        <param name="max">1.57</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param> 
+      </state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="right_tip_joint">
+      <command_interface name="position">
+        <param name="min">-1.57</param>
+        <param name="max">1.57</param>
       </command_interface>
       <state_interface name="position">
         <param name="initial_value">0.0</param> 
@@ -341,8 +363,8 @@
       <geometry>
         <cylinder radius="0.0508" length="0.055"/>
       </geometry>
-      <material name="LightBlue">
-        <color rgba="0.11 0.37 0.56 1.0"/>
+      <material name="DarkBrown">
+        <color rgba="0.25 0.08 0.03 1.0"/>
       </material>
     </visual>
   </link>
@@ -538,9 +560,9 @@
   <joint name="gripper_extension" type="prismatic">
 
     <axis xyz="1 0 0"/>
-    <limit effort="50.0" lower="0.0" upper="0.4" velocity="0.5"/>
+    <limit effort="100.0" lower="0.0" upper="0.4" velocity="0.5"/>
     <origin rpy="0 0 0" xyz="0.2 0 0.1"/>
-
+    <dynamics damping="1.0" friction="0.5"/>
     <parent link="base_link"/>
     <child link="gripper_pole"/>
   </joint>
@@ -551,6 +573,9 @@
         <cylinder length="0.4" radius="0.01"/>
       </geometry>
       <origin rpy="0 1.57075 0" xyz="-0.18 0 -0.1"/>
+      <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
     </visual>
 
     <collision>
@@ -564,25 +589,28 @@
 
   </link>
 
-  <joint name="left_gripper_joint" type="prismatic">
-    <axis xyz="0 1 0"/>
-    <limit effort="100.0" lower="0.0" upper="0.06" velocity="0.25"/>
-
-    <origin rpy="0 0 0" xyz="0.2 0.01 0"/>
-    <parent link="gripper_pole"/>
+  <joint name="left_gripper_joint" type="revolute">
+   <axis xyz="0 0 1"/>
+    <limit effort="500.0" lower="-1.57" upper="1.57" velocity="0.25"/>
+    <origin rpy="0 0 0" xyz="0.025 0.015 -0.1"/>
+    <dynamics damping="1.0" friction="0.5"/>
+    <parent link="gear"/>
     <child link="left_gripper"/>
   </joint>
 
   <link name="left_gripper">
     <visual>
-      <origin rpy="-3.1415 0 0" xyz="-0.13 0 -0.1"/>
+      <origin rpy="0 0 0" xyz="0.05 0.0 0.0"/>
       <geometry>
         <box size="0.1 0.02 0.02"/> <!-- Comprimento, largura, altura -->
       </geometry>
+      <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
     </visual>
 
     <collision>
-      <origin rpy="-3.1415 0 0" xyz="-0.13 0 -0.1"/>
+      <origin rpy="0 0 0" xyz="0.05 0.0 0.0"/>
       <geometry>
         <box size="0.1 0.02 0.02"/>
       </geometry>
@@ -592,8 +620,11 @@
 
   </link>
 
-  <joint name="left_tip_joint" type="fixed">
-    <origin rpy="0.0 0 0" xyz="0.06 0.001 0"/>
+  <joint name="left_tip_joint" type="revolute">
+    <origin rpy="0 0 0" xyz="0.1 0.001 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100.0" lower="-1.57" upper="1.57" velocity="0.25"/>
+    <dynamics damping="1.0" friction="0.5"/>
     <parent link="left_gripper"/>
     <child link="left_tip"/>
   </joint>
@@ -601,14 +632,17 @@
   <link name="left_tip">
    
     <visual>
-      <origin rpy="0 0 -0.1" xyz="-0.1 0 -0.1"/>
+      <origin rpy="0 0 -0.1" xyz="0.03 0 0"/>
       <geometry>
         <box size="0.06 0.01 0.01"/>
       </geometry>
+      <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
     </visual>
 
     <collision>
-      <origin rpy="0 0 -0.1" xyz="-0.1 0 -0.1"/>
+      <origin rpy="0 0 0" xyz="0.03 0 0"/>
       <geometry>
         <box size="0.06 0.01 0.01"/>
       </geometry>
@@ -619,25 +653,28 @@
 
   </link>
 
-  <joint name="right_gripper_joint" type="prismatic">
-    <axis xyz="0 1 0"/>
-    <limit effort="100.0" lower="-0.06" upper="0" velocity="0.25"/>
-    <origin rpy="0 0 0" xyz="0.2 -0.01 0"/>
-    
-    <parent link="gripper_pole"/>
+  <joint name="right_gripper_joint" type="revolute">
+    <axis xyz="0 0 -1"/>
+    <limit effort="500.0" lower="-1.57" upper="1.57" velocity="0.25"/>
+    <origin rpy="0 0 0" xyz="0.025 -0.015 -0.1"/>
+    <dynamics damping="1.0" friction="0.5"/>
+    <parent link="gear"/>
     <child link="right_gripper"/>
   </joint>
 
   <link name="right_gripper">
     <visual>
-      <origin rpy="-3.1415 0 0" xyz="-0.13 0 -0.1"/>
+      <origin rpy="0 0 0" xyz="0.05 0.0 0.0"/>
       <geometry>
         <box size="0.1 0.02 0.02"/>
       </geometry>
+      <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
     </visual>
 
     <collision>
-      <origin rpy="-3.1415 0 0" xyz="-0.13 0 -0.1"/>
+      <origin rpy="0 0 0" xyz="0.05 0.0 0.0"/>
       <geometry>
         <box size="0.1 0.02 0.02"/>
       </geometry>
@@ -647,32 +684,149 @@
 
   </link>
 
-  <joint name="right_tip_joint" type="fixed">
-    <origin rpy="0.0 0 0" xyz="0.06 -0.001 0"/>
+  <joint name="right_tip_joint" type="revolute">
+    <origin rpy="0 0 0" xyz="0.1 -0.001 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit effort="100.0" lower="-1.57" upper="1.57" velocity="0.25"/>
+    <dynamics damping="1.0" friction="0.5"/>
     <parent link="right_gripper"/>
     <child link="right_tip"/>
   </joint>
 
   <link name="right_tip">
     <visual>
-      <origin rpy="0 0 0.1" xyz="-0.1 0 -0.1"/>
+      <origin rpy="0 0 0.1" xyz="0.03 0 0"/>
       <geometry>
         <box size="0.06 0.01 0.01"/>
       </geometry>
+      <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
     </visual> 
 
     <collision>
-      <origin rpy="0 0 0.1" xyz="-0.1 0 -0.1"/>
+      <origin rpy="0 0 0" xyz="0.03 0 0"/>
       <geometry>
         <box size="0.06 0.01 0.01"/>
       </geometry>
     </collision>
 
     <xacro:box_inertia m="0.005" w="0.01" h="0.01" d="0.06"/>
-
-
   </link>
+
+  <!-- <link name="left_gear">
+    <visual>
+      <origin rpy="0 0 0" xyz= "0.025 0.012 -0.1"/>
+        <geometry>
+          <sphere radius="0.01"/>
+        </geometry>
+        <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
+    </visual>
+
+    <xacro:sphere_inertia m="0.005" r="0.1"/>
+  </link>
+  <joint name="left_gear_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="gripper_pole"/>
+    <child link="left_gear"/>
+  </joint>
+
+    <link name="right_gear">
+    <visual>
+      <origin rpy="0 0 0" xyz= "0.025 -0.012 -0.1"/>
+        <geometry>
+          <sphere radius="0.01"/>
+        </geometry>
+        <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
+    </visual>
+
+    <xacro:sphere_inertia m="0.005" r="0.1"/>
+  </link>
+  <joint name="right_gear_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="gripper_pole"/>
+    <child link="right_gear"/>
+  </joint> -->
+
+  <link name="gear">
+    <visual>
+      <origin rpy="0 0 0" xyz= "0.025 0.0 -0.1"/>
+        <geometry>
+          <sphere radius="0.015"/>
+        </geometry>
+        <material name="orange">
+        <color rgba="1.0 0.4 0 1.0"/>
+      </material>
+    </visual>
+
+    <xacro:sphere_inertia m="0.005" r="0.1"/>
+  </link>
+  <joint name="gear_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="gripper_pole"/>
+    <child link="gear"/>
+  </joint>
+
+
+    <link name="tale">
+    <visual>
+      <geometry>
+        <box size="${base_length/2} ${base_width*0.7} ${base_height/5}"/>
+      </geometry>
+      <material name="brown">
+        <color rgba="1.0 0.5 0 1.0"/>
+      </material>
+    </visual>
+
+    <collision>
+      <geometry>
+        <box size="${base_length/2} ${base_width*0.7} ${base_height/5}"/>
+      </geometry>
+    </collision>
+
+    <xacro:box_inertia m="0.001" w="${base_length/2}" d="${base_width*0.7}" h="${base_height/5}"/>
+  </link>
+
+  <joint name="tale_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="tale"/>
+    <origin xyz="-${base_length*0.7} 0.0 -${base_height}" rpy="0 0 0"/>
+  </joint>
   
+    <link name="left_eye">
+    <visual>
+      <origin rpy="0 0 0" xyz= "0.21 0.1 -0.1"/>
+        <geometry>
+          <sphere radius="0.01"/>
+        </geometry>
+    </visual>
+    <xacro:sphere_inertia m="0.005" r="0.1"/>
+  </link>
+  <joint name="left_eye_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_footprint"/>
+    <child link="left_eye"/>
+  </joint>
+
+    <link name="right_eye">
+    <visual>
+      <origin rpy="0 0 0" xyz= "0.21 -0.1 -0.1"/>
+        <geometry>
+          <sphere radius="0.01"/>
+        </geometry>
+    </visual>
+
+    <xacro:sphere_inertia m="0.005" r="0.1"/>
+  </link>
+  <joint name="right_eye_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_footprint"/>
+    <child link="right_eye"/>
+  </joint>
 
 
 </robot>
