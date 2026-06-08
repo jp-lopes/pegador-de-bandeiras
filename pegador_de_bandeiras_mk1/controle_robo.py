@@ -68,6 +68,7 @@ class ControleRobo(Node):
         self.centro_x_camera = -1
         self.tempo_desviando = -1
         self.direcao_desvio = -1
+        self.desviando = False
         self.direcao_aleatoria = random.choice([Direcoes.DIREITA.value, Direcoes.ESQUERDA.value])
         self.direcao_bandeira = -1
         # Distância de detecção de obstáculos
@@ -231,7 +232,7 @@ class ControleRobo(Node):
 
         ## DESVIANDO DE OBSTACULO: o robô vira para o lado oposto do obstáculo e anda para frente
         elif self.estado_atual == Estados.DESVIANDO_DE_OBSTACULO:
-            if self.obstaculo_a_frente:
+            if not self.desviando:
                 obstaculo_lados = self.obstaculo_a_direita or self.obstaculo_a_esquerda
                 # Obstaculo apenas à frente direita
                 if self.obstaculo_a_frente_direita and not self.obstaculo_a_frente_esquerda and not obstaculo_lados:
@@ -244,7 +245,7 @@ class ControleRobo(Node):
                     if self.bandeira_a_frente:
                         self.direcao_desvio = self.direcao_bandeira
                     else:
-                        self.direcao_desvio = self.direcao_aleatoria
+                        self.direcao_desvio = Direcoes.ESQUERDA.value if min(self.distancias_direita) < min(self.distancias_esquerda) else Direcoes.DIREITA.value
                 # Obstáculo nas duas frentes E na direita:
                 elif self.obstaculo_a_direita:
                     self.direcao_desvio = Direcoes.ESQUERDA.value
@@ -253,14 +254,13 @@ class ControleRobo(Node):
                     self.direcao_desvio = Direcoes.DIREITA.value
                 
                 twist.angular.z = base_vel_angular * self.direcao_desvio * 0.75
-                self.tempo_desviando = 5  # depois de sair da frente do obstaculo, desvia por mais 5 loops
+                self.desviando = True
 
-            elif self.tempo_desviando > 0:
-                twist.angular.z = base_vel_angular * self.direcao_desvio * 0.75
-                twist.linear.x = base_vel_linear
-                self.tempo_desviando -= 1
+            elif self.obstaculo_a_frente:
+                twist.angular.z = base_vel_angular * self.direcao_desvio
 
             else:
+                self.desviando = False
                 self.direcao_aleatoria = random.choice([Direcoes.DIREITA.value, Direcoes.ESQUERDA.value])
                 self.estado_atual = Estados.EXPLORANDO
 
