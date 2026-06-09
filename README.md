@@ -17,7 +17,9 @@ Este projeto é um robô móvel autônomo capaz de se deslocar em uma arena com 
 Diagrama de Estados:
 ![Diagrama de Estados](https://github.com/jp-lopes/pegador_de_bandeiras/blob/pegador_de_bandeiras_mk1/Diagrama_de_estados.png)
 
-
+Arquivos para apresentação na feira de extensão:
+- [pôster](https://docs.google.com/presentation/d/1d3UxarLUDG2wu3aqnuSmSDFOD7z9jMMMoiP7K6U-u2s/edit?slide=id.p#slide=id.p)
+- [slides](https://drive.google.com/file/d/1fvQyAbL2nSSsEmluT0DadpGj-qvy-iIv/view?usp=sharing)
 
 ## Autores
 - Andre Luiz de Souza Murakami - nUSP 5631500 - [@Andre-Murakami](https://github.com/Andre-Murakami)
